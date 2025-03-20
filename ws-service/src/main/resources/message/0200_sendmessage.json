@@ -1,0 +1,16 @@
+{
+    "mid": "0200",
+    "userId": "2119750023921664",
+    "timestamp": 1630383263319,
+    "deviceId": "a907a87a-3713-5da7-aa3a-471cdfb271ef",
+    "content": {
+        "destId": "2119900972728320",
+        "message": "hello world",
+        "clientRequestId": "d70719f6-db35-5dcb"
+    }
+
+}
+
+
+
+

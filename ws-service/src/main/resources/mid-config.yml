@@ -1,0 +1,7 @@
+## YAML Template.
+---
+handlers:
+    - mid: "0100"
+      messageType: Login
+    - mid: "0200"
+      messageType: Send message 1:1

@@ -1,0 +1,13 @@
+chat:
+  nodeId: 1
+  netty:
+    port: 8181
+    websocketPath: /ws
+    hearbeat:
+      send: true
+      readIdleTime: 300
+      writeIdleTime: 300
+spring:
+  main:
+    web-application-type: none
+
