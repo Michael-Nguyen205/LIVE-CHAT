@@ -33,7 +33,7 @@
 
     <modules>
         <module>common-service</module>
-        <module>authen-service</module>
+        <module>identity-service</module>
         <module>user-service</module>
         <module>ws-service</module>
     </modules>

@@ -8,7 +8,7 @@
 		<version>1.0</version>
 	</parent>
 	<groupId>c2.code</groupId>
-	<artifactId>authen-service</artifactId>
+	<artifactId>identity-service</artifactId>
 	<version>1.0</version>
 	<name>authen-service</name>
 	<description>authen-service</description>
@@ -98,6 +98,20 @@
 			<artifactId>common-service</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<!-- Spring Boot Data JPA for ORM -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<!-- PostgreSQL Driver -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
