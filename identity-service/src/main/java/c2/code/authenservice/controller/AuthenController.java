@@ -2,12 +2,15 @@ package c2.code.authenservice.controller;
 
 import c2.code.api.CommonResult;
 import c2.code.authenservice.exceptions.AppException;
+import c2.code.authenservice.models.request.AgentLoginRequest;
 import c2.code.authenservice.models.request.CreateAuthorRequest;
 import c2.code.authenservice.models.request.IntrospectRequest;
 import c2.code.authenservice.models.request.SignUpSubAgentRequest;
+import c2.code.authenservice.models.response.AgentLoginResponse;
 import c2.code.authenservice.models.response.IntrospectResponse;
 import c2.code.authenservice.service.AuthService;
 import c2.code.authenservice.service.IAgentService;
+import c2.code.authenservice.service.IAuthenService;
 import c2.code.authenservice.service.IAuthorizeService;
 import c2.code.authenservice.service.UserService;
 import c2.code.dto.request.LoginRequest;
@@ -23,6 +26,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -47,8 +51,12 @@ public class AuthenController {
     private  final IAgentService agentService;
 
 
-
+    @Qualifier("authorizeServiceImpl")
     private  final IAuthorizeService authorizeService;
+
+    @Qualifier("authenServiceImpl")
+    private  final IAuthenService  authenService;
+
 
     @PostMapping("/sign-up-sub-agent")
     public CommonResult signUpSubAgent(@Valid @RequestBody SignUpSubAgentRequest request) {
@@ -80,41 +88,14 @@ public class AuthenController {
 
 
 
-    @PostMapping ("")
-    @ResponseStatus(HttpStatus.OK)
-    public Mono<CommonResult> createAuthor(@RequestBody @Valid CreateAuthorRequest request) {
-        log.error("da vao day");
-        return  CommonResult.success()
+    @PostMapping("/login")
+    public  Mono<ResponseEntity<AgentLoginResponse>> login(@Valid @RequestBody AgentLoginRequest userLoginRequest ,
+                                                           ServerHttpRequest request){
+        return authenService.login(userLoginRequest.getEmail(),userLoginRequest.getPassword(),request).map(
+                        result -> ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(result))
                 .onErrorResume(AppException.class, e -> {
                     throw e;
                 });
     }
 
-//    @PostMapping("/sign-up-sub-agent")
-//    @ResponseStatus(HttpStatus.OK)
-//    public Mono<AuthorizeResponse> createAuthor(@RequestBody @Valid CreatePermissionRequest request) {
-//        log.error("da vao day");
-//        return permissionService.createAuthor(request)
-////                .onErrorResume(IllegalArgumentException.class,e -> {
-////                    log.error("đã vao IllegalArgumentException");
-////                    throw new AppException(ErrorCode.DATABASE_SAVE_ERROR, "Lỗi khi permissionRepository.findById" );
-////                })
-//                .onErrorResume(AppException.class, e -> {
-//                    throw e;
-//                });
-//    }
-
-
-
-//    @PostMapping("/sign-in")
-//    public CommonResult<SignInResponse> singIn(@RequestBody SignInRequest signInRequest) {
-//        return CommonResult.success(authService.authenticate(signInRequest.getUsername(), signInRequest.getPassword()));
-//    }
-
-
-    // Sử dụng api này để login websocket
-//    @PostMapping("/login")
-//    public CommonResult<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
-//        return CommonResult.success(authService.login(loginRequest));
-//    }
 }

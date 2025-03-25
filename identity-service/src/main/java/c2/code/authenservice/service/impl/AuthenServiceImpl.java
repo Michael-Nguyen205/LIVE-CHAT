@@ -3,78 +3,50 @@ package c2.code.authenservice.service.impl;
 import c2.code.authenservice.entity.sql.Agent;
 import c2.code.authenservice.enums.ErrorCodeEnum;
 import c2.code.authenservice.exceptions.AppException;
+import c2.code.authenservice.models.auth.CustomUserDetails;
+import c2.code.authenservice.models.dto.AuthorizeDTO;
+import c2.code.authenservice.models.request.IntrospectRequest;
 import c2.code.authenservice.models.request.SignUpSubAgentRequest;
+import c2.code.authenservice.models.response.AgentLoginResponse;
+import c2.code.authenservice.models.response.AgentResponse;
+import c2.code.authenservice.models.response.IntrospectResponse;
 import c2.code.authenservice.repository.AgentRepository;
 import c2.code.authenservice.service.IAgentService;
+import c2.code.authenservice.service.IAuthenService;
+import c2.code.authenservice.service.ITokenService;
+import c2.code.authenservice.utils.JwtTokenUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.internal.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 @Log4j2
 @RequiredArgsConstructor
 
-@Service("agentServiceImpl")  // Đặt tên cho bean
-public class AuthenServiceImpl implements IAgentService {
+@Service("authenServiceImpl")  // Đặt tên cho bean
+public class AuthenServiceImpl implements IAuthenService {
 
     private  final AgentRepository agentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ReactiveAuthenticationManager authenticationManager;
+    private  final ITokenService tokenService;
+    private final JwtTokenUtils jwtTokenUtil;
 
     @Override
-    public Void createUser(SignUpSubAgentRequest request) {
-
-
-        try {
-
-            if(request.getFullname() == null ||request.getFullname().equals("")){
-                throw new AppException(ErrorCodeEnum.NULL_POINTER);
-            }
-            if(request.getCompanyId() == null ||request.getCompanyId().equals("")){
-                throw new AppException(ErrorCodeEnum.NULL_POINTER);
-            }
-
-            if(request.getEmail() == null ||request.getEmail().equals("")){
-                throw new AppException(ErrorCodeEnum.NULL_POINTER);
-            }
-
-
-            UUID permissionId = request.getPermissionId();
-            if (permissionId != null) {
-                throw new AppException(ErrorCodeEnum.NULL_POINTER);
-            }
-
-            UUID uuid = UUID.randomUUID(); // Tạo UUID
-            String password = encodeBase62(uuid.toString());
-
-            Agent agent = Agent.builder()
-                    .fullname(request.getFullname())
-                    .isMain(false)
-                    .alias(request.getAlias() == null ? null : request.getAlias())
-                    .companyId(request.getCompanyId())
-                    .email(request.getEmail())
-                    .isActive(true)
-                    .password(passwordEncoder.encode(password))
-                    .build();
-
-
-            agentRepository.save(agent);
-
-        }catch (AppException e){
-            throw e;
-        } catch (DataIntegrityViolationException e) {
-            // Ghi log rõ ràng thông tin entity gặp lỗi
-            log.error("Duplicate key error: Entity type: {}, Entity: {}, Message: {}",
-                    e.getMessage(), e);
-            throw new AppException(ErrorCodeEnum.DUPLICATE_DATA, "Entity already exists");
-        } catch (Exception e) {
-        log.error("Error updating entity: {}", e.getMessage(), e);
-        throw new AppException(ErrorCodeEnum.INVALID_KEY, "Internal server error");
-    }
+    public Mono<IntrospectResponse> introSpect(IntrospectRequest request) {
+        String jwt = request.getToken();
         return null;
     }
 
@@ -82,22 +54,70 @@ public class AuthenServiceImpl implements IAgentService {
 
 
 
-    public static String encodeBase62(String uuid) {
-        String base62Characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-        StringBuilder base62String = new StringBuilder();
-        long value = uuid.hashCode(); // Dùng hashCode của UUID để tạo chuỗi ngắn hơn
-        while (value > 0) {
-            base62String.insert(0, base62Characters.charAt((int)(value % 62)));
-            value /= 62;
-        }
-        return base62String.toString();
+    @Override
+    public Mono<AgentLoginResponse> login(String email, String password, ServerHttpRequest request) {
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(email, password);
+
+        return authenticationManager.authenticate(authenticationToken)
+                .onErrorResume(AppException.class,ex -> {
+                    ex.printStackTrace();
+                    log.error("Login error: {}", ex.getMessage());
+                    throw ex;
+//                                return Mono.error(new AppException(ErrorCode.DATABASE_SAVE_ERROR,"loi tao token")); // Trả về lỗi
+                })
+                .flatMap(authentication -> {
+                    log.error("user : {}", authentication.getAuthorities());
+                    log.error("user : {}", authentication.getPrincipal().toString());
+                    log.error("user : {}", authentication);
+
+                    List<String> permisstionList = authentication.getAuthorities().stream()
+                            .map(GrantedAuthority::getAuthority)
+                            .toList(); // Thu thập vào List<String>
+
+                    // Chuyển đổi principal về CustomUserDetails
+                    CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
+                    Agent agent = customUserDetails.getAgent();
+
+                    // Tạo token JWT
+                    return jwtTokenUtil.generateToken(authentication)
+                            .onErrorResume(ex -> {
+                                ex.printStackTrace();
+                                log.error("Login error: {}", ex.getMessage());
+                                return Mono.error(ex);
+//                                return Mono.error(new AppException(ErrorCode.DATABASE_SAVE_ERROR,"loi tao token")); // Trả về lỗi
+                            })
+                            .flatMap(token -> {
+                                String userAgent = request.getHeaders().getFirst(HttpHeaders.USER_AGENT);
+                                log.error("headers: {}", userAgent);
+                                // Kiểm tra nếu là thiết bị di động
+                                return isMobileDevice(userAgent)
+                                        .flatMap(checkMobile -> {
+                                            // Gọi dịch vụ để thêm token
+                                            return tokenService.addToken(agent.getId(), token, checkMobile)
+                                                    .thenReturn(
+                                                            AgentLoginResponse.builder()
+                                                                    .agent(AgentResponse.toUserResponse(agent))
+                                                                    .token(token)
+                                                                    .build() // Đảm bảo bạn build đối tượng UserLoginResponse
+                                                    ).onErrorResume( AppException.class, e->{
+                                                        e.printStackTrace();
+                                                        return Mono.error(e);
+
+                                                    });
+                                        });
+                            });
+                })   ;
+//                .as(operator::transactional);
+
+    }
+
+    private Mono<Boolean> isMobileDevice(String userAgent) {
+        return Mono.just(userAgent != null && userAgent.toLowerCase().contains("mobile")); // Kiểm tra User-Agent
     }
 
 
-//    private void validateEmailNotExist(String email) {
-//        if (agentRepository.existsByEmail(email)) {
-//            throw new AppException(ErrorCodeEnum.USER_EXISTED, "Email already exists");
-//        }
-//    }
+
+
+
 
 }

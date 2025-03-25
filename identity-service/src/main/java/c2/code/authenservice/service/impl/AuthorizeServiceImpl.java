@@ -16,8 +16,7 @@ import java.util.stream.Collectors;
 
 @Log4j2
 @RequiredArgsConstructor
-@Service
-@Qualifier("authorizeServiceImpl")
+@Service("authorizeServiceImpl")
 public class AuthorizeServiceImpl implements IAuthorizeService {
 
     private final DatabaseClient databaseClient;

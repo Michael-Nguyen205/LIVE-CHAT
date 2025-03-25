@@ -1,10 +1,14 @@
 package c2.code.authenservice.config;
 
+import c2.code.authenservice.enums.ErrorCodeEnum;
 import c2.code.authenservice.exceptions.AppException;
+import c2.code.authenservice.models.auth.CustomUserDetails;
 import c2.code.authenservice.repository.AgentRepository;
+import c2.code.authenservice.service.IAuthorizeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -30,21 +34,28 @@ import reactor.core.publisher.Mono;
 public class SecurityConfig {
 
     private final AgentRepository agentRepository;
-    private final UserPermissionServiceImpl userPermissionService;
+
+
+    @Qualifier("authorizeServiceImpl")
+    private final IAuthorizeService authorizeService;
 
 
     @Bean
     @Primary
     public ReactiveUserDetailsService userDetailsService() {
         return email -> agentRepository.findByEmail(email)
-                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_EXISTED,"email không tồn tại")))
+                .switchIfEmpty(Mono.error(new AppException(ErrorCodeEnum.USER_NOT_EXISTED,"email không tồn tại")))
                 // Nếu authorities rỗng sẽ có thể sảy ra lỗi
-                .flatMap(user -> userPermissionService.getAuthoritiesForUserById(user.getId())
-                        .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_EXISTED,"tài khoản nay không có tole")))
-                        .collectList()
-                        .map(authorities -> (UserDetails) new CustomUserDetails(user, authorities)));// Sử dụng CustomUserDetails
-
+                .flatMap(user -> authorizeService.getAuthor(user.getEmail())
+                        .switchIfEmpty(Mono.error(new AppException(ErrorCodeEnum.USER_NOT_EXISTED,"tài khoản nay không có tole")))
+                        .map(authorities -> (UserDetails) new CustomUserDetails(user, null,authorities)));// Sử dụng CustomUserDetails
     }
+
+
+
+
+
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {

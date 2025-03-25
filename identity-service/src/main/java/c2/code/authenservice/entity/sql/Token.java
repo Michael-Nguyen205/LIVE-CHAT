@@ -1,11 +1,16 @@
 package c2.code.authenservice.entity.sql;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Data;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
 @Entity
+@Builder
 @Table(name = "tokens")
 public class Token extends BaseEntity {
 
@@ -14,7 +19,7 @@ public class Token extends BaseEntity {
     private UUID id;
 
     @Column(name = "expiration_date", nullable = false)
-    private String expirationDate;
+        private LocalDateTime expirationDate;
 
     @Column(name = "expired", nullable = false)
     private boolean expired;
@@ -23,7 +28,7 @@ public class Token extends BaseEntity {
     private boolean isMobile;
 
     @Column(name = "refresh_expiration_date")
-    private String refreshExpirationDate;
+    private LocalDateTime refreshExpirationDate;
 
     @Column(name = "refresh_token", nullable = false, length = 512)
     private String refreshToken;
@@ -39,4 +44,8 @@ public class Token extends BaseEntity {
 
     @Column(name = "version")
     private String version;
+
+    public Token() {
+
+    }
 }
