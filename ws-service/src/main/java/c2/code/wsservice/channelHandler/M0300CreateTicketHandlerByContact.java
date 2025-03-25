@@ -6,6 +6,8 @@ import c2.code.wsservice.dto.ContactDTO;
 import c2.code.wsservice.dto.TicketDTO;
 import c2.code.wsservice.dto.TicketStatusDTO;
 import c2.code.wsservice.dto.TicketTypeDTO;
+import c2.code.wsservice.enums.ErrorCodeEnum;
+import c2.code.wsservice.exceptions.AppException;
 import c2.code.wsservice.request.ClientRequest;
 import c2.code.wsservice.message.M0300CreateTicketMessage;
 import c2.code.wsservice.service.api.AuthService;
@@ -52,8 +54,17 @@ public class M0300CreateTicketHandlerByContact implements ChatHandler {
 
 
         //kiểm tra khách hàng có đến từ trình duyệt mình thật không
+        String url = request.getUrlStart();
+        String urlCompany = "lấy trong redis hoặc db";
+        if (!url.equals(urlCompany)){
+            throw new AppException(ErrorCodeEnum.CANNOT_SEND_EMAIL,"efe");
+        }
         //kiểm tra xem có áp dụng tự động gán tag dựa trên keyword với issue không , có thì gán (logic...)
 
+
+
+
+        //lấy dữ liệu condition để phân phòng ban
         ObjectId accountId =  request.getAccountId();
         DepartmentAgentAssignmentConditionResponse  departmentAgentAssignmentConditionResponse = new DepartmentAgentAssignmentConditionResponse();
 

@@ -4,6 +4,7 @@ import c2.code.api.ResultCode;
 import c2.code.wsservice.cache.ChannelContextCache;
 import c2.code.wsservice.config.MidHandlerConfig;
 import c2.code.wsservice.channelHandler.ChatHandler;
+import c2.code.wsservice.exceptions.AppException;
 import c2.code.wsservice.message.BaseResponse;
 import c2.code.wsservice.request.ClientRequest;
 import c2.code.wsservice.util.ContextUtils;
@@ -47,6 +48,20 @@ public class RequestRoutingHandler extends SimpleChannelInboundHandler<WebSocket
         }
     }
 
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        // Xử lý ngoại lệ toàn cục
+        logger.error("Exception caught: ", cause);
+        // Gửi phản hồi lỗi cho client nếu cần
+        if (cause instanceof AppException) {
+            // Xử lý riêng nếu cần thiết
+        } else {
+            // Đóng kết nối nếu gặp lỗi không thể khôi phục
+            ctx.close();
+        }
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext context, WebSocketFrame frame) throws Exception {
 
@@ -68,7 +83,7 @@ public class RequestRoutingHandler extends SimpleChannelInboundHandler<WebSocket
 //                "timezone": "UTC-5" kiểu gì
 //
 
-
+        try {
         if (frame instanceof TextWebSocketFrame) {
             String textRequest = ((TextWebSocketFrame) frame).text().trim();
             ClientRequest clientRequest = gson.fromJson(textRequest, ClientRequest.class);
@@ -117,6 +132,10 @@ public class RequestRoutingHandler extends SimpleChannelInboundHandler<WebSocket
             String message = "unsupported frame type: " + frame.getClass().getName();
             throw new UnsupportedOperationException(message);
         }
+        } catch (Exception e) {
+            logger.error("Error processing request in channelRead", e);
+            // Xử lý ngoại lệ nếu có
+            context.close(); // Đóng kết nối nếu có lỗi nghiêm trọng
+        }
     }
-
 }

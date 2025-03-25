@@ -1,0 +1,77 @@
+#scp -pr . root@103.124.93.29:/root/
+version: '3.7'
+
+services:
+  postgres-container:
+    container_name: postgres-livechat-container
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: KHANH2005t
+      POSTGRES_DB: LiveChat
+      POSTGRES_USER: postgres
+    ports:
+      - "5434:5433"
+    volumes:
+      - ./sql/shopapp.sql:/docker-entrypoint-initdb.d/init-script.sql
+    networks:
+      - livechat-network
+
+  redis-container:
+    image: docker.io/redis:latest
+    container_name: redis-livechat-container
+    restart: always
+    ports:
+      - "6380:6379" # Port mapping for Redis
+#    command: [ "redis-server", "--requirepass", "KHANH2005t", "--user", "default" ]
+    volumes:
+      - ./redis-data:/data # Mount a volume for Redis data persistence
+    networks:
+      - livechat-network
+
+networks:
+  livechat-network:
+    driver: bridge
+
+
+#  shopapp-spring-container:
+#    container_name: shopapp-spring-container
+#    build:
+#      context: .
+#      dockerfile: DockerfileJavaSpring
+#    ports:
+#      - 8099:8091
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:mysql://mysql8-container:3306/ShopApp?serverTimezone=UTC&allowPublicKeyRetrieval=true
+#      MYSQL_ROOT_PASSWORD: KHANH2005t
+#      REDIS_HOST: redis-container
+#      REDIS_PORT: 6379
+#
+#    depends_on:
+#      - mysql8-container
+#    networks:
+#      - shopapp-network
+
+
+
+#  docker-compose up -d
+
+#docker-compose -f ./deployment.yaml down
+
+#docker-compose -f ./deployment.yaml rm -s -f mysql8-container
+#docker-compose -f ./deployment.yaml up -d mysql8-container
+
+#docker-compose -f ./deployment.yaml rm -s -f phpmyadmin8-container
+#docker-compose -f ./deployment.yaml up -d phpmyadmin8-container
+
+
+#docker-compose -f ./deployment.yaml rm -s -f shopapp-spring-container
+#docker-compose -f ./deployment.yaml up -d shopapp-spring-container
+#docker logs shopapp-spring-container
+
+#docker-compose -f ./deployment.yaml rm -s -f redis-container
+#docker-compose -f ./deployment.yaml up -d redis-container
+
+
+
+

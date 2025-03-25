@@ -1,6 +1,6 @@
 package c2.code.authenservice.service.impl;
 
-import c2.code.authenservice.entity.departmentAgentAssignmentCondition.DepartmentAgentAssignmentCondition;
+import c2.code.authenservice.entity.nosql.departmentAgentAssignmentCondition.DepartmentAgentAssignmentCondition;
 import c2.code.authenservice.repository.DepartmentAgentAssignmentConditionRepository;
 import c2.code.authenservice.service.IDepartmentAgentAssignmentConditionService;
 import org.bson.types.ObjectId;
