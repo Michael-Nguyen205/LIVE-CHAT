@@ -1,0 +1,6 @@
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/   # URL của Eureka Server
+    register-with-eureka: true   # Đảm bảo Gateway đăng ký vào Eureka
+    fetch-registry: true

@@ -1,10 +1,12 @@
 package com.devteria.gateway.filter;
 
-import com.devteria.gateway.dto.ApiResponse;
+import com.devteria.gateway.models.ApiResponse;
+import com.devteria.gateway.models.dto.AuthorizeDTO;
+import com.devteria.gateway.models.dto.FunctionDTO;
 import com.devteria.gateway.service.IdentityService;
+import com.devteria.gateway.utils.PermissionCheckerUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -23,19 +25,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.server.HttpServerResponse;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-
 @Component
 @Slf4j
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PACKAGE, makeFinal = true)
 public class AuthenticationFilter implements GlobalFilter, Ordered {
-    IdentityService identityService;
-    ObjectMapper objectMapper;
+
+    private final IdentityService identityService;
+    private final ObjectMapper objectMapper;
+    private final PermissionCheckerUtil permissionCheckerUtil;
 
     @NonFinal
     private String[] bypassEndpoints = {
@@ -47,83 +48,58 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     @NonFinal
     private String apiPrefix;
 
-
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Enter authentication filter....");
 
         if (isPublicEndpoint(exchange.getRequest()))
-            return chain.filter(exchange);
+            return chain.filter(exchange); // Skip authentication for public endpoints
 
         // Get token from authorization header
         List<String> authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
         if (CollectionUtils.isEmpty(authHeader))
-            return unauthenticated(exchange.getResponse());
+            return unauthenticated(exchange.getResponse()); // Return unauthenticated if no token is found
 
         String token = authHeader.getFirst().replace("Bearer ", "");
         log.error("Token: {}", token);
 
-
+        // Call introspect and validate the token
         return identityService.introspect(token).flatMap(introspectResponse -> {
-            log.error("introspectResponse {}:",introspectResponse);
-            if (introspectResponse.getResult().isValid()){
+            log.error("introspectResponse {}:", introspectResponse);
 
-                log.error("da passs introspectResponse");
-                log.error("exchange {} :",exchange);
+            if (introspectResponse.getResult().isValid()) {
+                log.error("Passed introspectResponse");
+                log.error("exchange {} :", exchange);
 
+                String path = exchange.getRequest().getURI().getPath();
 
-
-                identityService.hasRoleForPath(token, path)
+                // Check if user has permission for the path
+                return permissionCheckerUtil.hasRoleForPath(introspectResponse.getResult().getAuthorizeDTO(), path)
                         .flatMap(hasPermission -> {
                             if (hasPermission) {
-                                return chain.filter(exchange);
+                                return chain.filter(exchange); // If user has permission, continue the filter chain
                             } else {
-                                return unauthorizedResponse(exchange);
+                                return unauthenticated(exchange.getResponse()); // If no permission, return unauthenticated
                             }
                         });
-
-                exchange.getRequest().mutate()
-                        .header("X-Custom-Header", "CustomHeaderValue")
-                        .build();
-
-
-                return chain.filter(exchange);
+            } else {
+                log.error("Authentication failed.");
+                return unauthenticated(exchange.getResponse()); // Return unauthenticated if introspect fails
             }
-            else{
-                log.error("authen lỗi bà con ơi");
-                return unauthenticated(exchange.getResponse());
-            }
-
-        })
-                .onErrorResume(throwable -> unauthenticated(exchange.getResponse()));
-    }
-
-
-
-    public Mono<Boolean> hasRoleForPath(String token, String path) {
-        // Lấy các claims từ JWT token
-
-
-        // Kiểm tra quyền cho từng API path
-        if (path.equals("/api/v1/getDetailCustomer/**")) {
-            return Mono.just(claims.containsKey("VIEW_CUSTOMER") && claims.get("VIEW_CUSTOMER").equals("true"));
-        } else if (path.equals("/customer/getDetailCustomer/**")) {
-            return Mono.just(claims.containsKey("VIEW_PERMISSION") && claims.get("VIEW_PERMISSION").equals("true"));
-        }
-        return Mono.just(false); // Không có quyền nếu không khớp với bất kỳ đường dẫn nào
+        }).onErrorResume(throwable -> unauthenticated(exchange.getResponse())); // Handle any other error
     }
 
     @Override
     public int getOrder() {
-        return -1;
+        return -1; // Ensure this filter runs first
     }
 
-    private boolean isPublicEndpoint(ServerHttpRequest request){
+    private boolean isPublicEndpoint(ServerHttpRequest request) {
         return Arrays.stream(bypassEndpoints)
                 .anyMatch(s -> request.getURI().getPath().matches(apiPrefix + s));
     }
 
-    Mono<Void> unauthenticated(ServerHttpResponse response){
+    Mono<Void> unauthenticated(ServerHttpResponse response) {
         ApiResponse<?> apiResponse = ApiResponse.builder()
                 .code(1401)
                 .message("Unauthenticated")
@@ -140,6 +116,6 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         response.getHeaders().add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
 
         return response.writeWith(
-                Mono.just(response.bufferFactory().wrap(body.getBytes())));
+                Mono.just(response.bufferFactory().wrap(body.getBytes()))); // Write unauthenticated response
     }
 }

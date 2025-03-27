@@ -2,10 +2,12 @@ package com.devteria.gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication
-public class ApiGatewayApplication {
+@EnableDiscoveryClient  // Đảm bảo có annotation này để đăng ký với Eureka
 
+public class ApiGatewayApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ApiGatewayApplication.class, args);
 	}

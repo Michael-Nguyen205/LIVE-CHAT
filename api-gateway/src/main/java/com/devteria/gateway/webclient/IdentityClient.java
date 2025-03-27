@@ -1,8 +1,8 @@
 package com.devteria.gateway.webclient;
 
-import com.devteria.gateway.dto.ApiResponse;
-import com.devteria.gateway.dto.request.IntrospectRequest;
-import com.devteria.gateway.dto.response.IntrospectResponse;
+import com.devteria.gateway.models.ApiResponse;
+import com.devteria.gateway.models.request.IntrospectRequest;
+import com.devteria.gateway.models.response.IntrospectResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.PostExchange;

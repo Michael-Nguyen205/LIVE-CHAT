@@ -8,7 +8,7 @@ public class DepartmentAgentAssignmentConditionResponse {
     private String accountId;
     private List<IssueConditionResponse> issueCondition;
     private List<KeywordConditionResponse> keywordCondition;
-    private List<TagConditionResponse> tagsCondition;
+//    private List<TagConditionResponse> tagsCondition;
     private List<AgentResponse> agent;
 
     // Getters and Setters

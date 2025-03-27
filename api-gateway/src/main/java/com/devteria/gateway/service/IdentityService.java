@@ -1,8 +1,8 @@
 package com.devteria.gateway.service;
 
-import com.devteria.gateway.dto.ApiResponse;
-import com.devteria.gateway.dto.request.IntrospectRequest;
-import com.devteria.gateway.dto.response.IntrospectResponse;
+import com.devteria.gateway.models.ApiResponse;
+import com.devteria.gateway.models.request.IntrospectRequest;
+import com.devteria.gateway.models.response.IntrospectResponse;
 import com.devteria.gateway.webclient.IdentityClient;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

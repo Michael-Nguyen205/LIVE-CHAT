@@ -1,0 +1,14 @@
+spring:
+
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27016/authen_db
+    redis:
+      host: localhost
+      port: 6381
+      use-redis-cache: true
+      database: 1
+
+server:
+  port: 8010

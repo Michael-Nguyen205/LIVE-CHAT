@@ -1,6 +1,5 @@
 package spring.boot.messageservice.consumer;
 
-import c2.code.dto.mid.M0200ChatData;
 import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
